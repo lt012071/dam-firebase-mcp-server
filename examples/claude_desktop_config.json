@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "firebase-dam": {
+      "command": "python3",
+      "args": [
+        "/path/to/mcp-server-firebase/main.py",
+        "--google-credentials",
+        "/path/to/mcp-server-firebase/credentials.json",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "PYTHONPATH": "/path/to/mcp-server-firebase"
+      }
+    }
+  }
+}

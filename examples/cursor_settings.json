@@ -1,0 +1,5 @@
+{
+  "cursor.composer.mcpEnabled": true,
+  "cursor.composer.mcpConfigPath": "~/.config/Cursor/User/globalStorage/cursor.composer/mcp_config.json",
+  "cursor.composer.enableExternalTools": true
+}

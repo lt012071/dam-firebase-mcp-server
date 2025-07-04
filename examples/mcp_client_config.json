@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "firebase-dam": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "main.py",
+        "--google-credentials",
+        "credentials.json",
+        "--transport",
+        "stdio"
+      ],
+      "description": "Firebase DAM MCP Server for accessing Firestore and Storage"
+    }
+  }
+}
