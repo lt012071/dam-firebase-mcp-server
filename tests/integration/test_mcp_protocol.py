@@ -18,7 +18,7 @@ class TestMCPProtocolIntegration:
         self, mock_get_client, mock_init_client, test_credentials_file
     ):
         """Test MCP server initialization via direct calls."""
-        from src.mcp_server_firebase.server import initialize_firebase_client, get_firebase_client
+        from src.mcp_server_firebase.server import get_firebase_client, initialize_firebase_client
 
         # Setup mocks
         mock_client = Mock()
@@ -119,10 +119,10 @@ class TestMCPProtocolIntegration:
     def test_all_tools_via_mcp(self, mock_get_client, test_credentials_file):
         """Test all MCP tools via direct calls."""
         from src.mcp_server_firebase.server import (
-            search_assets,
-            search_versions,
-            search_comments,
             search_asset_files,
+            search_assets,
+            search_comments,
+            search_versions,
         )
 
         # Setup mock data
