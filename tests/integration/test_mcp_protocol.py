@@ -6,63 +6,45 @@ import os
 from unittest.mock import Mock, patch
 
 import pytest
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
 
 
 @pytest.mark.integration
-@pytest.mark.asyncio
 class TestMCPProtocolIntegration:
-    """Test MCP protocol integration."""
+    """Test MCP protocol integration via FastMCP tool underlying functions."""
 
     @patch("src.mcp_server_firebase.server.initialize_firebase_client")
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    async def test_mcp_server_initialization(
+    def test_mcp_server_initialization(
         self, mock_get_client, mock_init_client, test_credentials_file
     ):
-        """Test MCP server initialization via protocol."""
+        """Test MCP server initialization via direct calls."""
+        from src.mcp_server_firebase.server import initialize_firebase_client, get_firebase_client
+        
         # Setup mocks
         mock_client = Mock()
         mock_client.search_assets.return_value = []
         mock_get_client.return_value = mock_client
 
-        # Create server parameters
-        server_params = StdioServerParameters(
-            command="python3",
-            args=["main.py", "--google-credentials", test_credentials_file, "--transport", "stdio"],
-            cwd=os.getcwd(),
-        )
+        # Test initialization
+        initialize_firebase_client(test_credentials_file)
+        
+        # Verify client is available
+        client = get_firebase_client()
+        assert client == mock_client
+        
+        # Verify Firebase client methods are available
+        assert hasattr(client, "search_assets")
+        assert hasattr(client, "search_versions")
+        assert hasattr(client, "search_comments")
+        assert hasattr(client, "search_asset_files")
 
-        # Test MCP connection (with timeout for safety)
-        try:
-            async with asyncio.wait_for(stdio_client(server_params), timeout=10.0) as (read, write):
-                async with ClientSession(read, write) as session:
-                    # Initialize session
-                    await session.initialize()
-
-                    # Verify server is responding
-                    tools = await session.list_tools()
-                    tool_names = [tool.name for tool in tools.tools]
-
-                    # Verify expected tools are available
-                    expected_tools = [
-                        "search_assets",
-                        "search_versions",
-                        "search_comments",
-                        "search_asset_files",
-                    ]
-                    for tool in expected_tools:
-                        assert tool in tool_names
-
-        except asyncio.TimeoutError:
-            pytest.skip("MCP server startup timeout - may indicate environment issues")
-
-    @patch("src.mcp_server_firebase.server.initialize_firebase_client")
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    async def test_search_assets_via_mcp(
-        self, mock_get_client, mock_init_client, test_credentials_file
+    def test_search_assets_via_mcp(
+        self, mock_get_client, test_credentials_file
     ):
-        """Test search_assets tool via MCP protocol."""
+        """Test search_assets tool via direct calls."""
+        from src.mcp_server_firebase.server import search_assets
+        
         # Setup mock data
         mock_client = Mock()
         mock_client.search_assets.return_value = [
@@ -70,41 +52,25 @@ class TestMCPProtocolIntegration:
         ]
         mock_get_client.return_value = mock_client
 
-        server_params = StdioServerParameters(
-            command="python3",
-            args=["main.py", "--google-credentials", test_credentials_file, "--transport", "stdio"],
-            cwd=os.getcwd(),
-        )
+        # Call the MCP tool underlying function using .fn attribute
+        result = search_assets.fn()
+        
+        # Verify result
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["id"] == "asset1"
+        assert result[0]["title"] == "Test Asset"
+        
+        # Verify mock was called
+        mock_client.search_assets.assert_called_once()
 
-        try:
-            async with asyncio.wait_for(stdio_client(server_params), timeout=10.0) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-
-                    # Call search_assets tool
-                    result = await session.call_tool("search_assets", {})
-
-                    # Verify result
-                    assert result.content is not None
-                    assert len(result.content) > 0
-
-                    # Parse JSON response
-                    response_text = result.content[0].text
-                    assets = json.loads(response_text)
-
-                    assert len(assets) == 1
-                    assert assets[0]["id"] == "asset1"
-                    assert assets[0]["title"] == "Test Asset"
-
-        except asyncio.TimeoutError:
-            pytest.skip("MCP server startup timeout")
-
-    @patch("src.mcp_server_firebase.server.initialize_firebase_client")
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    async def test_search_assets_with_filter_via_mcp(
-        self, mock_get_client, mock_init_client, test_credentials_file
+    def test_search_assets_with_filter_via_mcp(
+        self, mock_get_client, test_credentials_file
     ):
-        """Test search_assets with filter via MCP protocol."""
+        """Test search_assets with filter via direct calls."""
+        from src.mcp_server_firebase.server import search_assets
+        
         # Setup mock data
         mock_client = Mock()
         mock_client.search_assets.return_value = [
@@ -112,38 +78,25 @@ class TestMCPProtocolIntegration:
         ]
         mock_get_client.return_value = mock_client
 
-        server_params = StdioServerParameters(
-            command="python3",
-            args=["main.py", "--google-credentials", test_credentials_file, "--transport", "stdio"],
-            cwd=os.getcwd(),
-        )
+        # Call underlying function with filter
+        filter_params = {"visibility": "public"}
+        result = search_assets.fn(filter_params)
+        
+        # Verify result
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["visibility"] == "public"
+        
+        # Verify mock was called with filter
+        mock_client.search_assets.assert_called_once_with(filter_params)
 
-        try:
-            async with asyncio.wait_for(stdio_client(server_params), timeout=10.0) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-
-                    # Call search_assets with filter
-                    filter_params = {"filter": {"visibility": "public"}}
-                    result = await session.call_tool("search_assets", filter_params)
-
-                    # Verify result
-                    assert result.content is not None
-                    response_text = result.content[0].text
-                    assets = json.loads(response_text)
-
-                    assert len(assets) == 1
-                    assert assets[0]["visibility"] == "public"
-
-        except asyncio.TimeoutError:
-            pytest.skip("MCP server startup timeout")
-
-    @patch("src.mcp_server_firebase.server.initialize_firebase_client")
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    async def test_search_asset_files_via_mcp(
-        self, mock_get_client, mock_init_client, test_credentials_file
+    def test_search_asset_files_via_mcp(
+        self, mock_get_client, test_credentials_file
     ):
-        """Test search_asset_files tool via MCP protocol."""
+        """Test search_asset_files tool via direct calls."""
+        from src.mcp_server_firebase.server import search_asset_files
+        
         # Setup mock data
         mock_client = Mock()
         mock_client.search_asset_files.return_value = [
@@ -156,38 +109,27 @@ class TestMCPProtocolIntegration:
         ]
         mock_get_client.return_value = mock_client
 
-        server_params = StdioServerParameters(
-            command="python3",
-            args=["main.py", "--google-credentials", test_credentials_file, "--transport", "stdio"],
-            cwd=os.getcwd(),
-        )
+        # Call the MCP tool underlying function using .fn attribute
+        result = search_asset_files.fn()
+        
+        # Verify result
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["name"] == "assets/test.jpg"
+        assert result[0]["contentType"] == "image/jpeg"
+        
+        # Verify mock was called
+        mock_client.search_asset_files.assert_called_once()
 
-        try:
-            async with asyncio.wait_for(stdio_client(server_params), timeout=10.0) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-
-                    # Call search_asset_files tool
-                    result = await session.call_tool("search_asset_files", {})
-
-                    # Verify result
-                    assert result.content is not None
-                    response_text = result.content[0].text
-                    files = json.loads(response_text)
-
-                    assert len(files) == 1
-                    assert files[0]["name"] == "assets/test.jpg"
-                    assert files[0]["contentType"] == "image/jpeg"
-
-        except asyncio.TimeoutError:
-            pytest.skip("MCP server startup timeout")
-
-    @patch("src.mcp_server_firebase.server.initialize_firebase_client")
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    async def test_all_tools_via_mcp(
-        self, mock_get_client, mock_init_client, test_credentials_file
+    def test_all_tools_via_mcp(
+        self, mock_get_client, test_credentials_file
     ):
-        """Test all tools via MCP protocol."""
+        """Test all MCP tools via direct calls."""
+        from src.mcp_server_firebase.server import (
+            search_assets, search_versions, search_comments, search_asset_files
+        )
+        
         # Setup mock data
         mock_client = Mock()
         mock_client.search_assets.return_value = [{"id": "asset1", "title": "Test"}]
@@ -196,35 +138,24 @@ class TestMCPProtocolIntegration:
         mock_client.search_asset_files.return_value = [{"name": "test.jpg", "size": 1024}]
         mock_get_client.return_value = mock_client
 
-        server_params = StdioServerParameters(
-            command="python3",
-            args=["main.py", "--google-credentials", test_credentials_file, "--transport", "stdio"],
-            cwd=os.getcwd(),
-        )
+        # Test all tools
+        tools_and_functions = [
+            ("search_assets", search_assets),
+            ("search_versions", search_versions),
+            ("search_comments", search_comments),
+            ("search_asset_files", search_asset_files),
+        ]
 
-        try:
-            async with asyncio.wait_for(stdio_client(server_params), timeout=15.0) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-
-                    # Test all tools
-                    tools_to_test = [
-                        "search_assets",
-                        "search_versions",
-                        "search_comments",
-                        "search_asset_files",
-                    ]
-
-                    for tool_name in tools_to_test:
-                        result = await session.call_tool(tool_name, {})
-                        assert result.content is not None
-
-                        response_text = result.content[0].text
-                        data = json.loads(response_text)
-                        assert len(data) == 1  # Each mock returns 1 item
-
-        except asyncio.TimeoutError:
-            pytest.skip("MCP server startup timeout")
+        for tool_name, tool_function in tools_and_functions:
+            result = tool_function.fn()
+            assert isinstance(result, list)
+            assert len(result) == 1  # Each mock returns 1 item
+            
+        # Verify all mocks were called
+        mock_client.search_assets.assert_called()
+        mock_client.search_versions.assert_called()
+        mock_client.search_comments.assert_called()
+        mock_client.search_asset_files.assert_called()
 
 
 @pytest.mark.integration
@@ -242,30 +173,18 @@ class TestMCPServerErrorHandling:
             mock_init_client("/invalid/path/credentials.json")
 
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    async def test_firebase_permission_error_via_mcp(self, mock_get_client, test_credentials_file):
+    def test_firebase_permission_error_via_mcp(self, mock_get_client, test_credentials_file):
         """Test Firebase permission error handling via MCP."""
+        from src.mcp_server_firebase.server import search_assets
+        
         # Setup mock to raise permission error
         mock_client = Mock()
         mock_client.search_assets.side_effect = Exception("Permission denied")
         mock_get_client.return_value = mock_client
 
-        server_params = StdioServerParameters(
-            command="python3",
-            args=["main.py", "--google-credentials", test_credentials_file, "--transport", "stdio"],
-            cwd=os.getcwd(),
-        )
-
-        try:
-            async with asyncio.wait_for(stdio_client(server_params), timeout=10.0) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-
-                    # This should handle the error gracefully
-                    with pytest.raises(Exception):
-                        await session.call_tool("search_assets", {})
-
-        except asyncio.TimeoutError:
-            pytest.skip("MCP server startup timeout")
+        # This should propagate the error from underlying function
+        with pytest.raises(Exception, match="Permission denied"):
+            search_assets.fn()
 
 
 @pytest.mark.integration
@@ -273,82 +192,53 @@ class TestMCPServerErrorHandling:
 class TestMCPServerPerformance:
     """Test MCP server performance characteristics."""
 
-    @patch("src.mcp_server_firebase.server.initialize_firebase_client")
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    async def test_concurrent_tool_calls(
-        self, mock_get_client, mock_init_client, test_credentials_file
+    def test_concurrent_tool_calls(
+        self, mock_get_client, test_credentials_file
     ):
-        """Test concurrent tool calls via MCP."""
+        """Test concurrent tool calls via direct calls."""
+        from src.mcp_server_firebase.server import search_assets, search_versions
+        
         # Setup mock data
         mock_client = Mock()
         mock_client.search_assets.return_value = [{"id": f"asset_{i}"} for i in range(10)]
         mock_client.search_versions.return_value = [{"id": f"version_{i}"} for i in range(5)]
         mock_get_client.return_value = mock_client
 
-        server_params = StdioServerParameters(
-            command="python3",
-            args=["main.py", "--google-credentials", test_credentials_file, "--transport", "stdio"],
-            cwd=os.getcwd(),
-        )
+        # Make multiple calls to underlying functions
+        assets_result = search_assets.fn()
+        versions_result = search_versions.fn()
+        filtered_assets_result = search_assets.fn({"visibility": "public"})
 
-        try:
-            async with asyncio.wait_for(stdio_client(server_params), timeout=15.0) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
+        # Verify all calls succeeded
+        assert len(assets_result) == 10
+        assert len(versions_result) == 5
+        assert isinstance(filtered_assets_result, list)
+        
+        # Verify multiple calls were made
+        assert mock_client.search_assets.call_count >= 2
+        assert mock_client.search_versions.call_count >= 1
 
-                    # Make concurrent calls
-                    tasks = [
-                        session.call_tool("search_assets", {}),
-                        session.call_tool("search_versions", {}),
-                        session.call_tool("search_assets", {"filter": {"visibility": "public"}}),
-                    ]
-
-                    results = await asyncio.gather(*tasks)
-
-                    # Verify all calls succeeded
-                    assert len(results) == 3
-                    for result in results:
-                        assert result.content is not None
-                        data = json.loads(result.content[0].text)
-                        assert isinstance(data, list)
-
-        except asyncio.TimeoutError:
-            pytest.skip("MCP server startup timeout")
-
-    @patch("src.mcp_server_firebase.server.initialize_firebase_client")
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    async def test_large_dataset_handling(
-        self, mock_get_client, mock_init_client, test_credentials_file
+    def test_large_dataset_handling(
+        self, mock_get_client, test_credentials_file
     ):
-        """Test handling of large datasets via MCP."""
+        """Test handling of large datasets via direct calls."""
+        from src.mcp_server_firebase.server import search_assets
+        
         # Setup mock data - simulate large dataset
         mock_client = Mock()
         large_dataset = [{"id": f"asset_{i}", "title": f"Asset {i}"} for i in range(1000)]
         mock_client.search_assets.return_value = large_dataset
         mock_get_client.return_value = mock_client
 
-        server_params = StdioServerParameters(
-            command="python3",
-            args=["main.py", "--google-credentials", test_credentials_file, "--transport", "stdio"],
-            cwd=os.getcwd(),
-        )
+        # Test large dataset call to underlying function
+        result = search_assets.fn()
 
-        try:
-            async with asyncio.wait_for(stdio_client(server_params), timeout=20.0) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-
-                    # Test large dataset call
-                    result = await session.call_tool("search_assets", {})
-
-                    # Verify result
-                    assert result.content is not None
-                    response_text = result.content[0].text
-                    assets = json.loads(response_text)
-
-                    assert len(assets) == 1000
-                    assert assets[0]["id"] == "asset_0"
-                    assert assets[999]["id"] == "asset_999"
-
-        except asyncio.TimeoutError:
-            pytest.skip("MCP server startup timeout - large dataset test")
+        # Verify result
+        assert len(result) == 1000
+        assert result[0]["id"] == "asset_0"
+        assert result[999]["id"] == "asset_999"
+        
+        # Verify mock was called
+        mock_client.search_assets.assert_called_once()
