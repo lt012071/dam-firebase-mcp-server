@@ -19,7 +19,7 @@ class TestMCPProtocolIntegration:
     ):
         """Test MCP server initialization via direct calls."""
         from src.mcp_server_firebase.server import initialize_firebase_client, get_firebase_client
-        
+
         # Setup mocks
         mock_client = Mock()
         mock_client.search_assets.return_value = []
@@ -27,11 +27,11 @@ class TestMCPProtocolIntegration:
 
         # Test initialization
         initialize_firebase_client(test_credentials_file)
-        
+
         # Verify client is available
         client = get_firebase_client()
         assert client == mock_client
-        
+
         # Verify Firebase client methods are available
         assert hasattr(client, "search_assets")
         assert hasattr(client, "search_versions")
@@ -39,12 +39,10 @@ class TestMCPProtocolIntegration:
         assert hasattr(client, "search_asset_files")
 
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    def test_search_assets_via_mcp(
-        self, mock_get_client, test_credentials_file
-    ):
+    def test_search_assets_via_mcp(self, mock_get_client, test_credentials_file):
         """Test search_assets tool via direct calls."""
         from src.mcp_server_firebase.server import search_assets
-        
+
         # Setup mock data
         mock_client = Mock()
         mock_client.search_assets.return_value = [
@@ -54,23 +52,21 @@ class TestMCPProtocolIntegration:
 
         # Call the MCP tool underlying function using .fn attribute
         result = search_assets.fn()
-        
+
         # Verify result
         assert isinstance(result, list)
         assert len(result) == 1
         assert result[0]["id"] == "asset1"
         assert result[0]["title"] == "Test Asset"
-        
+
         # Verify mock was called
         mock_client.search_assets.assert_called_once()
 
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    def test_search_assets_with_filter_via_mcp(
-        self, mock_get_client, test_credentials_file
-    ):
+    def test_search_assets_with_filter_via_mcp(self, mock_get_client, test_credentials_file):
         """Test search_assets with filter via direct calls."""
         from src.mcp_server_firebase.server import search_assets
-        
+
         # Setup mock data
         mock_client = Mock()
         mock_client.search_assets.return_value = [
@@ -81,22 +77,20 @@ class TestMCPProtocolIntegration:
         # Call underlying function with filter
         filter_params = {"visibility": "public"}
         result = search_assets.fn(filter_params)
-        
+
         # Verify result
         assert isinstance(result, list)
         assert len(result) == 1
         assert result[0]["visibility"] == "public"
-        
+
         # Verify mock was called with filter
         mock_client.search_assets.assert_called_once_with(filter_params)
 
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    def test_search_asset_files_via_mcp(
-        self, mock_get_client, test_credentials_file
-    ):
+    def test_search_asset_files_via_mcp(self, mock_get_client, test_credentials_file):
         """Test search_asset_files tool via direct calls."""
         from src.mcp_server_firebase.server import search_asset_files
-        
+
         # Setup mock data
         mock_client = Mock()
         mock_client.search_asset_files.return_value = [
@@ -111,25 +105,26 @@ class TestMCPProtocolIntegration:
 
         # Call the MCP tool underlying function using .fn attribute
         result = search_asset_files.fn()
-        
+
         # Verify result
         assert isinstance(result, list)
         assert len(result) == 1
         assert result[0]["name"] == "assets/test.jpg"
         assert result[0]["contentType"] == "image/jpeg"
-        
+
         # Verify mock was called
         mock_client.search_asset_files.assert_called_once()
 
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    def test_all_tools_via_mcp(
-        self, mock_get_client, test_credentials_file
-    ):
+    def test_all_tools_via_mcp(self, mock_get_client, test_credentials_file):
         """Test all MCP tools via direct calls."""
         from src.mcp_server_firebase.server import (
-            search_assets, search_versions, search_comments, search_asset_files
+            search_assets,
+            search_versions,
+            search_comments,
+            search_asset_files,
         )
-        
+
         # Setup mock data
         mock_client = Mock()
         mock_client.search_assets.return_value = [{"id": "asset1", "title": "Test"}]
@@ -150,7 +145,7 @@ class TestMCPProtocolIntegration:
             result = tool_function.fn()
             assert isinstance(result, list)
             assert len(result) == 1  # Each mock returns 1 item
-            
+
         # Verify all mocks were called
         mock_client.search_assets.assert_called()
         mock_client.search_versions.assert_called()
@@ -176,7 +171,7 @@ class TestMCPServerErrorHandling:
     def test_firebase_permission_error_via_mcp(self, mock_get_client, test_credentials_file):
         """Test Firebase permission error handling via MCP."""
         from src.mcp_server_firebase.server import search_assets
-        
+
         # Setup mock to raise permission error
         mock_client = Mock()
         mock_client.search_assets.side_effect = Exception("Permission denied")
@@ -193,12 +188,10 @@ class TestMCPServerPerformance:
     """Test MCP server performance characteristics."""
 
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    def test_concurrent_tool_calls(
-        self, mock_get_client, test_credentials_file
-    ):
+    def test_concurrent_tool_calls(self, mock_get_client, test_credentials_file):
         """Test concurrent tool calls via direct calls."""
         from src.mcp_server_firebase.server import search_assets, search_versions
-        
+
         # Setup mock data
         mock_client = Mock()
         mock_client.search_assets.return_value = [{"id": f"asset_{i}"} for i in range(10)]
@@ -214,18 +207,16 @@ class TestMCPServerPerformance:
         assert len(assets_result) == 10
         assert len(versions_result) == 5
         assert isinstance(filtered_assets_result, list)
-        
+
         # Verify multiple calls were made
         assert mock_client.search_assets.call_count >= 2
         assert mock_client.search_versions.call_count >= 1
 
     @patch("src.mcp_server_firebase.server.get_firebase_client")
-    def test_large_dataset_handling(
-        self, mock_get_client, test_credentials_file
-    ):
+    def test_large_dataset_handling(self, mock_get_client, test_credentials_file):
         """Test handling of large datasets via direct calls."""
         from src.mcp_server_firebase.server import search_assets
-        
+
         # Setup mock data - simulate large dataset
         mock_client = Mock()
         large_dataset = [{"id": f"asset_{i}", "title": f"Asset {i}"} for i in range(1000)]
@@ -239,6 +230,6 @@ class TestMCPServerPerformance:
         assert len(result) == 1000
         assert result[0]["id"] == "asset_0"
         assert result[999]["id"] == "asset_999"
-        
+
         # Verify mock was called
         mock_client.search_assets.assert_called_once()
