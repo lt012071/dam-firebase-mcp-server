@@ -1,8 +1,5 @@
 """Integration tests for MCP protocol communication."""
 
-import asyncio
-import json
-import os
 from unittest.mock import Mock, patch
 
 import pytest
