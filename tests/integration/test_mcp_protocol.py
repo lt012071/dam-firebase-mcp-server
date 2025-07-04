@@ -84,6 +84,65 @@ class TestMCPProtocolIntegration:
         mock_client.search_assets.assert_called_once_with(filter_params)
 
     @patch("src.mcp_server_firebase.server.get_firebase_client")
+    def test_search_versions_via_mcp(self, mock_get_client, test_credentials_file):
+        """Test search_versions tool via direct calls."""
+        from src.mcp_server_firebase.server import search_versions
+
+        # Setup mock data
+        mock_client = Mock()
+        mock_client.search_versions.return_value = [
+            {
+                "id": "version1",
+                "assetId": "asset123",
+                "version": "v1.0",
+                "fileType": "image/png",
+                "fileSize": 2048,
+            }
+        ]
+        mock_get_client.return_value = mock_client
+
+        # Call the MCP tool underlying function using .fn attribute
+        result = search_versions.fn()
+
+        # Verify result
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["id"] == "version1"
+        assert result[0]["assetId"] == "asset123"
+
+        # Verify mock was called
+        mock_client.search_versions.assert_called_once()
+
+    @patch("src.mcp_server_firebase.server.get_firebase_client")
+    def test_search_comments_via_mcp(self, mock_get_client, test_credentials_file):
+        """Test search_comments tool via direct calls."""
+        from src.mcp_server_firebase.server import search_comments
+
+        # Setup mock data
+        mock_client = Mock()
+        mock_client.search_comments.return_value = [
+            {
+                "id": "comment1",
+                "assetId": "asset123",
+                "user": "user456",
+                "text": "Great asset!",
+            }
+        ]
+        mock_get_client.return_value = mock_client
+
+        # Call the MCP tool underlying function using .fn attribute
+        result = search_comments.fn()
+
+        # Verify result
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["id"] == "comment1"
+        assert result[0]["user"] == "user456"
+
+        # Verify mock was called
+        mock_client.search_comments.assert_called_once()
+
+    @patch("src.mcp_server_firebase.server.get_firebase_client")
     def test_search_asset_files_via_mcp(self, mock_get_client, test_credentials_file):
         """Test search_asset_files tool via direct calls."""
         from src.mcp_server_firebase.server import search_asset_files
