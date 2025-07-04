@@ -50,6 +50,8 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+bandit-report.json
+safety-report.json
 
 # Translations
 *.mo
@@ -169,12 +171,15 @@ service-account*.json
 firebase-adminsdk-*.json
 google-credentials.json
 
-# Development and testing files
-test_*.py
+# Development and testing files (exclude proper test directories)
 debug_*.py
 check_*.py
-*_test.py
 mcp_client_test.py
+
+# Exclude temporary test files but keep tests/ directory
+test_*.py
+!tests/
+!tests/**/*.py
 
 # Temporary files
 *.tmp

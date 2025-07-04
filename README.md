@@ -228,23 +228,135 @@ src/
 
 ## Development
 
+### Setup Development Environment
+
+```bash
+# Clone the repository
+git clone https://github.com/lt012071/dam-firebase-mcp-server.git
+cd dam-firebase-mcp-server
+
+# Install development dependencies
+make install-dev
+
+# Or manually:
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+pre-commit install
+```
+
 ### Running Tests
 
 ```bash
-# Install dev dependencies
-pip install -r requirements-dev.txt
+# Run all unit tests (recommended for development)
+make test
+# or: pytest tests/unit/ -v -m "unit"
 
-# Run tests
-pytest tests/
+# Run integration tests
+make test-integration
+# or: pytest tests/integration/ -v -m "integration and not slow"
+
+# Run all tests with coverage
+make test-all
+# or: pytest tests/ --cov=src --cov-report=html
+
+# Run slow tests (only on CI)
+make test-slow
+# or: pytest tests/integration/ -v -m "slow"
+
+# Run tests in watch mode (for development)
+make test-watch
 ```
 
-### Linting
+### Code Quality
 
 ```bash
+# Format code
+make format
+# or: black src/ tests/ && isort src/ tests/
+
 # Run linting
-flake8 src/ main.py
-black src/ main.py
+make lint
+# or: flake8 src/ tests/
+
+# Type checking
+make type-check
+# or: mypy src/ --ignore-missing-imports
+
+# Security scanning
+make security
+# or: bandit -r src/ && safety check
+
+# Run all quality checks
+make quality
+
+# Run pre-commit hooks
+make pre-commit
 ```
+
+### Test Coverage
+
+```bash
+# Generate HTML coverage report
+make coverage-html
+# Open htmlcov/index.html in browser
+
+# Generate XML coverage report (for CI)
+make coverage-xml
+```
+
+### Docker Testing
+
+```bash
+# Build and test Docker image
+make docker-build
+make docker-test
+
+# Run with docker-compose
+make docker-compose-up
+```
+
+### Test Categories
+
+- **Unit Tests** (`tests/unit/`): Fast tests with mocked dependencies
+- **Integration Tests** (`tests/integration/`): Tests MCP protocol communication  
+- **Slow Tests** (marked with `@pytest.mark.slow`): Performance and stress tests
+
+### Writing Tests
+
+```python
+# Unit test example
+@pytest.mark.unit
+def test_firebase_client_init(test_credentials_file):
+    client = FirebaseClient(test_credentials_file)
+    assert client.credentials_path == test_credentials_file
+
+# Integration test example  
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_mcp_tool_via_protocol(test_credentials_file):
+    # Test actual MCP communication
+    pass
+
+# Slow test example
+@pytest.mark.slow
+@pytest.mark.integration
+async def test_large_dataset_handling():
+    # Performance test with large datasets
+    pass
+```
+
+### Continuous Integration
+
+Tests run automatically on:
+- Push to `main`/`master` branch
+- Pull request creation
+- Multiple Python versions (3.10, 3.11, 3.12)
+
+The CI pipeline includes:
+- Unit tests with coverage
+- Integration tests
+- Code quality checks (linting, typing, security)
+- Docker build verification
 
 ## Troubleshooting
 

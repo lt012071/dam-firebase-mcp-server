@@ -1,33 +1,32 @@
 """Firebase client initialization and management."""
 
-import json
 import logging
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-from dateutil.parser import parse as parse_datetime
+from typing import Any, Dict, List, Optional
 
 import firebase_admin
+from dateutil.parser import parse as parse_datetime
 from firebase_admin import credentials, firestore, storage
+
+# from google.cloud import storage as gcs
 from google.cloud.firestore_v1 import FieldFilter, Query
-from google.cloud import storage as gcs
 
 logger = logging.getLogger(__name__)
 
 
 class FirebaseClient:
     """Firebase client for accessing Firestore and Storage."""
-    
+
     def __init__(self, credentials_path: str):
         """Initialize Firebase client with service account credentials.
-        
+
         Args:
             credentials_path: Path to the service account JSON file
         """
         self.credentials_path = credentials_path
         self._app: Optional[firebase_admin.App] = None
         self._db: Optional[firestore.firestore.Client] = None
-        self._bucket: Optional[gcs.Bucket] = None
-        
+        self._bucket: Optional[Any] = None
+
     def initialize(self) -> None:
         """Initialize Firebase Admin SDK."""
         try:
@@ -39,28 +38,28 @@ class FirebaseClient:
         except Exception as e:
             logger.error(f"Failed to initialize Firebase client: {e}")
             raise
-    
+
     @property
     def db(self) -> firestore.firestore.Client:
         """Get Firestore client."""
         if self._db is None:
             raise RuntimeError("Firebase client not initialized")
         return self._db
-    
+
     @property
-    def bucket(self) -> gcs.Bucket:
+    def bucket(self) -> Any:
         """Get Storage bucket."""
         if self._bucket is None:
             raise RuntimeError("Firebase client not initialized")
         return self._bucket
-    
+
     def _apply_filters(self, query: Query, filters: Dict[str, Any]) -> Query:
         """Apply filters to a Firestore query.
-        
+
         Args:
             query: Base Firestore query
             filters: Dictionary of field filters
-            
+
         Returns:
             Modified query with filters applied
         """
@@ -87,105 +86,105 @@ class FirebaseClient:
             else:
                 # Equality filter
                 query = query.where(filter=FieldFilter(field, "==", value))
-        
+
         return query
-    
+
     def search_assets(self, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """Search assets collection with optional filters.
-        
+
         Args:
             filters: Optional dictionary of filters to apply
-            
+
         Returns:
             List of asset documents
         """
         try:
             query = self.db.collection("assets")
-            
+
             if filters:
                 query = self._apply_filters(query, filters)
-            
+
             docs = query.stream()
             results = []
-            
+
             for doc in docs:
                 data = doc.to_dict()
                 data["id"] = doc.id
                 results.append(data)
-            
+
             logger.info(f"Found {len(results)} assets")
             return results
-            
+
         except Exception as e:
             logger.error(f"Error searching assets: {e}")
             raise
-    
+
     def search_versions(self, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """Search versions collection with optional filters.
-        
+
         Args:
             filters: Optional dictionary of filters to apply
-            
+
         Returns:
             List of version documents
         """
         try:
             query = self.db.collection("versions")
-            
+
             if filters:
                 query = self._apply_filters(query, filters)
-            
+
             docs = query.stream()
             results = []
-            
+
             for doc in docs:
                 data = doc.to_dict()
                 data["id"] = doc.id
                 results.append(data)
-            
+
             logger.info(f"Found {len(results)} versions")
             return results
-            
+
         except Exception as e:
             logger.error(f"Error searching versions: {e}")
             raise
-    
+
     def search_comments(self, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """Search comments collection with optional filters.
-        
+
         Args:
             filters: Optional dictionary of filters to apply
-            
+
         Returns:
             List of comment documents
         """
         try:
             query = self.db.collection("comments")
-            
+
             if filters:
                 query = self._apply_filters(query, filters)
-            
+
             docs = query.stream()
             results = []
-            
+
             for doc in docs:
                 data = doc.to_dict()
                 data["id"] = doc.id
                 results.append(data)
-            
+
             logger.info(f"Found {len(results)} comments")
             return results
-            
+
         except Exception as e:
             logger.error(f"Error searching comments: {e}")
             raise
-    
+
     def search_asset_files(self, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """Search files in the asset storage bucket with optional filters.
-        
+
         Args:
             filters: Optional dictionary of filters to apply
-            
+
         Returns:
             List of file metadata dictionaries
         """
@@ -193,15 +192,15 @@ class FirebaseClient:
             prefix = filters.get("prefix", "") if filters else ""
             content_type_filter = filters.get("contentType") if filters else None
             uploaded_at_filter = filters.get("uploadedAt") if filters else None
-            
+
             blobs = self.bucket.list_blobs(prefix=prefix)
             results = []
-            
+
             for blob in blobs:
                 # Apply content type filter
                 if content_type_filter and blob.content_type != content_type_filter:
                     continue
-                
+
                 # Apply upload date filter
                 if uploaded_at_filter and isinstance(uploaded_at_filter, str):
                     if uploaded_at_filter.startswith(">="):
@@ -220,7 +219,7 @@ class FirebaseClient:
                                 continue
                         except ValueError:
                             logger.warning(f"Invalid date format: {date_str}")
-                
+
                 file_info = {
                     "name": blob.name,
                     "size": blob.size,
@@ -228,13 +227,13 @@ class FirebaseClient:
                     "uploadedAt": blob.time_created.isoformat() if blob.time_created else None,
                     "downloadUrl": blob.public_url,
                     "etag": blob.etag,
-                    "generation": blob.generation
+                    "generation": blob.generation,
                 }
                 results.append(file_info)
-            
+
             logger.info(f"Found {len(results)} files")
             return results
-            
+
         except Exception as e:
             logger.error(f"Error searching asset files: {e}")
             raise
