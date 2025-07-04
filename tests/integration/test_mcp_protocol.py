@@ -3,8 +3,7 @@
 import asyncio
 import json
 import os
-import tempfile
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from mcp import ClientSession, StdioServerParameters

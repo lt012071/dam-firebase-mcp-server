@@ -3,8 +3,8 @@
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, Mock, patch
+from datetime import datetime
+from unittest.mock import Mock, patch
 
 import pytest
 

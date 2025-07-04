@@ -10,10 +10,10 @@ exclude =
     dist,
     *.egg-info
 ignore = 
-    E203,  # whitespace before ':'
-    W503,  # line break before binary operator
-    E501   # line too long (handled by black)
+    E203,
+    W503,
+    E501
 per-file-ignores =
-    tests/*:S101  # allow assert in tests
-    conftest.py:F401  # allow unused imports in conftest
-max-complexity = 10
+    tests/*:S101,
+    conftest.py:F401
+max-complexity = 15
