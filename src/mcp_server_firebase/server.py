@@ -1,9 +1,10 @@
 """MCP Server implementation for Firebase access."""
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastmcp import FastMCP
+
 from .firebase_client import FirebaseClient
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ firebase_client: Optional[FirebaseClient] = None
 
 def initialize_firebase_client(credentials_path: str) -> None:
     """Initialize the global Firebase client.
-    
+
     Args:
         credentials_path: Path to the service account JSON file
     """
@@ -25,10 +26,10 @@ def initialize_firebase_client(credentials_path: str) -> None:
 
 def get_firebase_client() -> FirebaseClient:
     """Get the initialized Firebase client.
-    
+
     Returns:
         The Firebase client instance
-        
+
     Raises:
         RuntimeError: If the client is not initialized
     """
@@ -44,7 +45,7 @@ mcp = FastMCP("Firebase MCP Server")
 @mcp.tool()
 def search_assets(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """Search assets in the Firestore assets collection.
-    
+
     The assets collection contains digital asset metadata with the following fields:
     - id: string - Unique asset identifier
     - title: string - Asset title
@@ -56,7 +57,7 @@ def search_assets(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any
     - updatedAt: string - Last update timestamp in ISO8601 format
     - visibility: 'public' | 'private' - Asset visibility level
     - latestVersionId: string (optional) - ID of the latest version
-    
+
     Args:
         filter: Optional dictionary of filters to apply. Supported filters:
             - category: string - Filter by asset category
@@ -65,10 +66,10 @@ def search_assets(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any
             - uploader: string - Filter by uploader user ID
             - uploadedAt: string - Filter by upload date (use ">=2024-06-01" format)
             - updatedAt: string - Filter by update date (use ">=2024-06-01" format)
-    
+
     Returns:
         List of asset documents matching the filters
-        
+
     Example:
         ```python
         # Search for public image assets with banner tag uploaded after June 1, 2024
@@ -91,7 +92,7 @@ def search_assets(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any
 @mcp.tool()
 def search_versions(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """Search versions in the Firestore versions collection.
-    
+
     The versions collection contains version metadata for assets with the following fields:
     - id: string - Unique version identifier
     - assetId: string - ID of the parent asset
@@ -102,7 +103,7 @@ def search_versions(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, A
     - fileSize: number - File size in bytes
     - updatedAt: string - Update timestamp in ISO8601 format
     - updatedBy: string - User ID who updated this version
-    
+
     Args:
         filter: Optional dictionary of filters to apply. Supported filters:
             - assetId: string - Filter by parent asset ID
@@ -110,10 +111,10 @@ def search_versions(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, A
             - fileType: string - Filter by MIME type
             - updatedBy: string - Filter by user who updated the version
             - updatedAt: string - Filter by update date (use ">=2024-06-01" format)
-    
+
     Returns:
         List of version documents matching the filters
-        
+
     Example:
         ```python
         # Search for PNG versions of a specific asset updated after June 1, 2024
@@ -135,23 +136,23 @@ def search_versions(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, A
 @mcp.tool()
 def search_comments(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """Search comments in the Firestore comments collection.
-    
+
     The comments collection contains user comments on assets with the following fields:
     - id: string - Unique comment identifier
     - assetId: string - ID of the asset being commented on
     - user: string - User ID who made the comment
     - text: string - Comment text content
     - createdAt: string - Comment creation timestamp in ISO8601 format
-    
+
     Args:
         filter: Optional dictionary of filters to apply. Supported filters:
             - assetId: string - Filter by asset ID
             - user: string - Filter by user ID
             - createdAt: string - Filter by creation date (use ">=2024-06-01" format)
-    
+
     Returns:
         List of comment documents matching the filters
-        
+
     Example:
         ```python
         # Search for comments on a specific asset by a specific user after June 1, 2024
@@ -173,16 +174,16 @@ def search_comments(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, A
 @mcp.tool()
 def search_asset_files(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """Search files in the Firebase Storage bucket.
-    
+
     This tool searches for files in the 'owndays-dam.firebasestorage.app' bucket
     which contains the actual asset files referenced by the Firestore documents.
-    
+
     Args:
         filter: Optional dictionary of filters to apply. Supported filters:
             - prefix: string - Filter by file path prefix (e.g., "assets/")
             - contentType: string - Filter by MIME type (e.g., "image/png")
             - uploadedAt: string - Filter by upload date (use ">=2024-06-01" format)
-    
+
     Returns:
         List of file metadata dictionaries with the following fields:
         - name: string - Full file path in the bucket
@@ -192,7 +193,7 @@ def search_asset_files(filter: Optional[Dict[str, Any]] = None) -> List[Dict[str
         - downloadUrl: string - Public download URL
         - etag: string - ETag for versioning
         - generation: number - File generation number
-        
+
     Example:
         ```python
         # Search for PNG images in the assets folder uploaded after June 1, 2024
