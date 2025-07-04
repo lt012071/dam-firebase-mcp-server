@@ -39,7 +39,7 @@ def get_firebase_client() -> FirebaseClient:
 
 
 # Initialize FastMCP
-mcp = FastMCP("Firebase MCP Server")
+mcp: FastMCP = FastMCP("Firebase MCP Server")
 
 
 @mcp.tool()

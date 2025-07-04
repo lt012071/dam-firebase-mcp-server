@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 import firebase_admin
 from dateutil.parser import parse as parse_datetime
 from firebase_admin import credentials, firestore, storage
-from google.cloud import storage as gcs
+# from google.cloud import storage as gcs
 from google.cloud.firestore_v1 import FieldFilter, Query
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class FirebaseClient:
         self.credentials_path = credentials_path
         self._app: Optional[firebase_admin.App] = None
         self._db: Optional[firestore.firestore.Client] = None
-        self._bucket: Optional[gcs.Bucket] = None
+        self._bucket: Optional[Any] = None
 
     def initialize(self) -> None:
         """Initialize Firebase Admin SDK."""
@@ -46,7 +46,7 @@ class FirebaseClient:
         return self._db
 
     @property
-    def bucket(self) -> gcs.Bucket:
+    def bucket(self) -> Any:
         """Get Storage bucket."""
         if self._bucket is None:
             raise RuntimeError("Firebase client not initialized")
